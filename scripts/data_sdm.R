@@ -131,18 +131,21 @@ env_wetl <- read.csv("data/env_vars/lakes_and_wetlands/dist_wetland_sp.csv")
 env_chik <- terra::rast("data/env_vars/livestock/chickens/6_Ch_2015_Aw.tif")
 env_duck <- terra::rast("data/env_vars/livestock/ducks/6_Dk_2015_Aw.tif")
 
-
 # Extract values for non-temporal covariates using simple point method:
-
 train_points <- terra::extract(env_elev, train_points, method = "simple", bind = TRUE)
-train_points <- terra::extract(env_land, train_points, method = "simple", bind = TRUE)
 train_points$dist_to_coast <- env_cost$dist_to_coast
 train_points$dist_to_wetland <- env_wetl$dist_to_wetland
+train_points <- terra::extract(env_chik, train_points, method = "simple", bind = TRUE, search_radius = 25000) # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+train_points$distance <- NULL
+train_points$cell <- NULL
+train_points <- terra::extract(env_duck, train_points, method = "simple", bind = TRUE, search_radius = 25000)  # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+train_points$distance <- NULL
+train_points$cell <- NULL
 
-######### CHECK SEARCH RADIUS HERE AND BIND ONLY SINGLE VALUE
-train_points <- terra::extract(env_chik, train_points, method = "simple", bind = TRUE, search_radius = 5000) # gives some NAs - may be a way of asking for nearest cell
-train_points <- terra::extract(env_duck, train_points, method = "simple", bind = TRUE, search_radius = 5000) # gives some NAs - may be a way of asking for nearest cell
-
+# Extract and convert land use to binary columns
+train_points <- terra::extract(env_land, train_points, method = "simple", bind = TRUE)
+train_points <- cbind(train_points, model.matrix(~ dem - 1, data = train_points) %>% as.data.frame)
+train_points$dem <- NULL
 
 # Extract values for temporal covariates by matching raster layer of appropriate calendar date
 
@@ -201,7 +204,7 @@ env_temp <- terra::rast("data/env_vars/climate/temp_midday_daily.tif")
 temp_layer_index <- sapply(train_points$Date, match_raster_layer, raster_ymd = env_temp)
 train_points$temp <- mapply(
   function(i, layer){
-    extract(env_temp[[layer]], train_points[i, ], search_radius = 2000, na.rm=TRUE)[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+    extract(env_temp[[layer]], train_points[i, ], search_radius = 25000)[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
   }, 
   i = seq_len(nrow(train_points)), layer = temp_layer_index
 )
@@ -209,18 +212,18 @@ train_points$temp <- mapply(
 # Mean midday temperature in the month prior
 train_points$temp_m <- mapply(
   function(i, layer){
-    env_temp[[calendar_wraparound_month(layer)]] %>% mean %>% extract(., train_points[i, ], search_radius = 2000, na.rm=TRUE) %>% .[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+    env_temp[[calendar_wraparound_month(layer)]] %>% mean %>% extract(., train_points[i, ], search_radius = 25000) %>% .[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
   }, 
   i = seq_len(nrow(train_points)), layer = temp_layer_index
 )
 
 
-# Diurnal tdrnerature range (daily)
-env_diur <- terra::rast("data/env_vars/climate/temp_diurnal_daily.tif")
+# Diurnal temperature range (daily)
+env_diur <- terra::rast("data/env_vars/climate/temp_diurnal_daily.tif") %>% subst(from = -Inf, to = NA)
 diur_layer_index <- sapply(train_points$Date, match_raster_layer, raster_ymd = env_diur)
 train_points$diur <- mapply(
   function(i, layer){
-    extract(env_diur[[layer]], train_points[i, ], search_radius = 2000, na.rm=TRUE)[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+    extract(env_diur[[layer]], train_points[i, ], search_radius = 25000)[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
   }, 
   i = seq_len(nrow(train_points)), layer = diur_layer_index
 )
@@ -228,7 +231,7 @@ train_points$diur <- mapply(
 # Mean diurnal temperature range in the month prior
 train_points$diur_m <- mapply(
   function(i, layer){
-    env_diur[[calendar_wraparound_month(layer)]] %>% mean %>% extract(., train_points[i, ], search_radius = 2000, na.rm=TRUE) %>% .[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+    env_diur[[calendar_wraparound_month(layer)]] %>% mean %>% extract(., train_points[i, ], search_radius = 25000) %>% .[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
   }, 
   i = seq_len(nrow(train_points)), layer = diur_layer_index
 )
@@ -239,7 +242,7 @@ env_prec <- terra::rast("data/env_vars/climate/total_precip_daily.tif")
 prec_layer_index <- sapply(train_points$Date, match_raster_layer, raster_ymd = env_prec)
 train_points$prec <- mapply(
   function(i, layer){
-    extract(env_prec[[layer]], train_points[i, ], search_radius = 2000, na.rm=TRUE)[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+    extract(env_prec[[layer]], train_points[i, ], search_radius = 25000)[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
   }, 
   i = seq_len(nrow(train_points)), layer = prec_layer_index
 )
@@ -247,61 +250,66 @@ train_points$prec <- mapply(
 # Total precipiation in the month prior
 train_points$prec_m <- mapply(
   function(i, layer){
-    env_prec[[calendar_wraparound_month(layer)]] %>% sum %>% extract(., train_points[i, ], search_radius = 2000, na.rm=TRUE) %>% .[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
+    env_prec[[calendar_wraparound_month(layer)]] %>% sum %>% extract(., train_points[i, ], search_radius = 25000) %>% .[1, 2]   # use search radius to ensure coastal cells are assigned value of nearest-neighbour
   }, 
   i = seq_len(nrow(train_points)), layer = prec_layer_index
 )
 
 
+# Save final dataset as vector and csv
 
-# CHECK NAS
-ggplot() +
-  geom_spatraster(data = env_chik, maxcell = 5000) +
-  geom_sf(data = train_points[217,], size = 4) +
-  theme_minimal() +
-  coord_sf(xlim = c(31.5, 32), ylim = c(31,31.5)) +
-  labs(x = "Longitude",
-       y = "Latitude",
-       shape = "Source", color = "Result")
+train_points %>% terra::writeVector("data/full_env_data.shp", overwrite = TRUE)
+train_points %>% as.data.frame() %>% cbind(crds(train_points), .) %>% write.csv("data/full_env_data.csv")
 
-ggplot() +
-  geom_sf(data = egy_map[1], fill = "grey", color = "black", alpha = 0.4)  +
-  geom_sf(data = point_data %>% arrange(Result, Source), aes(color = Result, shape = Source), size = 4, alpha = 0.7) +
-  theme_minimal() +
-  coord_sf(xlim = c(30,34), ylim = c(29,32)) +
-  scale_shape_manual(values=c(19, 18, 15, 17)) +
-  scale_color_manual(values=c('#56B4E9','#F8766D')) +
-  labs(x = "Longitude",
-       y = "Latitude",
-       shape = "Source",
-       color = "Result")
-
-ggplot() +
-  #  geom_sf(data = egy_map[1], fill = "grey", color = "black", alpha = 0.4)  +
-  geom_spatraster(data = env_elev, maxcell = 500) +
-  geom_sf(data = train_points %>% st_as_sf, aes(shape = Result), size = 4, color = "grey70") +
-  theme_minimal() +
-  guides(fill=guide_legend(title="Elevation")) +
-  coord_sf(xlim = c(25,36.5), ylim = c(22,32))
-
-ggplot() +
-  geom_sf(data = egy_map[1], fill = "grey", color = "black", alpha = 0.4)  +
-  geom_sf(data = train_points %>% st_as_sf, aes(shape = Result, color = ziso), size = 4) +
-  theme_minimal() +
-  coord_sf(xlim = c(25,36.5), ylim = c(22,32))
-
-# Examine NAs - what is overlap with raster where covar values cannot be extracted
-ggplot() +
-  geom_spatraster(data = env_duck) +
-  geom_sf(data = egy_map[1], color = "black", alpha = 0.05)  +
-  geom_sf(data = train_points %>% st_as_sf, aes(shape = Result, color = "red"), size = 4) +
-  theme_minimal() +
-  coord_sf(xlim = c(25,36.5), ylim = c(22,32))
-
-# View raster - crashes when setting coord_sf?
-ggplot() +
-  geom_spatraster(data = env_land, maxcell = 5e+03) +
-  geom_sf(data = egy_map[1], color = "black", alpha = 0.05)  +
-  guides(fill=guide_legend(title="Land cover category")) +
-  theme_minimal()  +
-  coord_sf(xlim = c(25,36.5), ylim = c(22,32))
+# 
+# # PLOTS
+# ggplot() +
+#   geom_spatraster(data = env_chik, maxcell = 5000) +
+#   geom_sf(data = train_points[217,], size = 4) +
+#   theme_minimal() +
+#   coord_sf(xlim = c(31.5, 32), ylim = c(31,31.5)) +
+#   labs(x = "Longitude",
+#        y = "Latitude",
+#        shape = "Source", color = "Result")
+# 
+# ggplot() +
+#   geom_sf(data = egy_map[1], fill = "grey", color = "black", alpha = 0.4)  +
+#   geom_sf(data = point_data %>% arrange(Result, Source), aes(color = Result, shape = Source), size = 4, alpha = 0.7) +
+#   theme_minimal() +
+#   coord_sf(xlim = c(30,34), ylim = c(29,32)) +
+#   scale_shape_manual(values=c(19, 18, 15, 17)) +
+#   scale_color_manual(values=c('#56B4E9','#F8766D')) +
+#   labs(x = "Longitude",
+#        y = "Latitude",
+#        shape = "Source",
+#        color = "Result")
+# 
+# ggplot() +
+#   #  geom_sf(data = egy_map[1], fill = "grey", color = "black", alpha = 0.4)  +
+#   geom_spatraster(data = env_elev, maxcell = 500) +
+#   geom_sf(data = train_points %>% st_as_sf, aes(shape = Result), size = 4, color = "grey70") +
+#   theme_minimal() +
+#   guides(fill=guide_legend(title="Elevation")) +
+#   coord_sf(xlim = c(25,36.5), ylim = c(22,32))
+# 
+# ggplot() +
+#   geom_sf(data = egy_map[1], fill = "grey", color = "black", alpha = 0.4)  +
+#   geom_sf(data = train_points %>% st_as_sf, aes(shape = Result, color = ziso), size = 4) +
+#   theme_minimal() +
+#   coord_sf(xlim = c(25,36.5), ylim = c(22,32))
+# 
+# # Examine NAs - what is overlap with raster where covar values cannot be extracted
+# ggplot() +
+#   geom_spatraster(data = env_duck) +
+#   geom_sf(data = egy_map[1], color = "black", alpha = 0.05)  +
+#   geom_sf(data = train_points %>% st_as_sf, aes(shape = Result, color = "red"), size = 4) +
+#   theme_minimal() +
+#   coord_sf(xlim = c(25,36.5), ylim = c(22,32))
+# 
+# # View raster - crashes when setting coord_sf?
+# ggplot() +
+#   geom_spatraster(data = env_land, maxcell = 5e+03) +
+#   geom_sf(data = egy_map[1], color = "black", alpha = 0.05)  +
+#   guides(fill=guide_legend(title="Land cover category")) +
+#   theme_minimal()  +
+#   coord_sf(xlim = c(25,36.5), ylim = c(22,32))

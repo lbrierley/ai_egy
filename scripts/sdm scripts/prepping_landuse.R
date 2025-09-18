@@ -52,5 +52,6 @@ vrt(
 
 dem <- rast("dem.vrt")
 dem_fact <- terra::as.factor(dem)
+dem_fact <- dem_fact %>% terra::project(y = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0") # reproject to lat-long
 terra::writeRaster(dem_fact, "data/env_vars/landcover/landcover_type1_full_raster.tif", overwrite=TRUE)
 

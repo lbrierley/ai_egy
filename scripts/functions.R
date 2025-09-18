@@ -2,7 +2,7 @@
 # Return raster to pluck value from
 match_raster_layer <- function(md, raster_ymd) {
   idx <- which((time(raster_ymd) %>% format("%m-%d")) >= md)
-  if (length(idx) == 0) return(length(time(env_ndvi)))  # if no match (because at the end of calendar year) return last possible raster, assume this spills into next year
+  if (length(idx) == 0) return(length(time(raster_ymd)))  # if no match (because at the end of calendar year) return last possible raster, assume this spills into next year
   return(idx[1])
 }
 

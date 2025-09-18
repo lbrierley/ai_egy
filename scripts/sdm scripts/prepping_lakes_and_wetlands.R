@@ -31,7 +31,7 @@ dist_wetl$dist_to_wetland <- as.vector(distance(train_points, as.polygons(glwd_c
 
 write.csv(dist_wetl, "data/env_vars/lakes_and_wetlands/dist_wetland_sp.csv")
 
-##### Raster version - may take a long time - ### ALSO NEEDS OCEAN REMOVING, MAYBE BY INTERSECTING AS IN AFRIGRID IN DIST_TO_COAST.R?
+##### Raster version - may take a long time
 # To points for distance calculation to centroid
 egy_points <- raster::xyFromCell(egy_rast, 1:ncell(egy_rast)) %>% as.data.frame %>% st_as_sf(coords = c("x", "y"), crs = "WGS84")
 
