@@ -22,8 +22,8 @@ tile_data <- luna::getNASA(
   version = "061",
   download = TRUE, 
   path = "data/env_vars/ndvi/raw",
-  username="sarahhayes",
-  password="NASATigtogs43!"
+  username="REPLACE WITH YOUR OWN USER EMAIL",
+  password="REPLACE WITH YOUR OWN USER PASSWORD"
 )
 
 # Check tiles

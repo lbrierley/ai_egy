@@ -58,7 +58,7 @@ rast_temp %>% terra::writeRaster("data/env_vars/climate/temp_midday_daily.tif")
 # Download hourly temperature
 for (j in 1:12) {   # can only request 1 month at once
   file <- wf_request(
-    user = "liam.brierley@glasgow.ac.uk",
+    user = "REPLACE WITH YOUR OWN USER EMAIL",
     request  =  list(
       "dataset_short_name" = "reanalysis-era5-land",
       "product_type" = "reanalysis",
@@ -115,7 +115,7 @@ rast_daily %>% terra::writeRaster("data/env_vars/climate/temp_diurnal_daily.tif"
 # Download hourly precipitation
 for (j in 1:12) {   # can only request 1 month at once
   file <- wf_request(
-    user = "liam.brierley@glasgow.ac.uk",
+    user = "REPLACE WITH YOUR OWN USER EMAIL",
     request  =  list(
       "dataset_short_name" = "reanalysis-era5-land",
       "product_type" = "reanalysis",

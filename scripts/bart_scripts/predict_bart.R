@@ -41,7 +41,7 @@ for(i in 1:length(pred_dates)){
   # Load in each covariate set
   pred_df <- read.csv(paste0("data/pred/pred_grid_",i,".csv")) %>% 
     filter(complete.cases(.)) %>%
-    select(-X)
+    dplyr::select(-X)
   
   pred_vect <- vect(pred_df, geom=c("x","y"), crs="EPSG:4326")
   
