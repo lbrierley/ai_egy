@@ -13,7 +13,7 @@ library(rnaturalearth)
 mn_data <- read_excel("data/raw_data/wild bird sampling 2019-2023 collective.xlsx") %>%
   select(Bird, Date, Coordinates, Result, H5, H9) %>%
   rename(Species = Bird) %>%
-  mutate(Source = "MN") %>% 
+  mutate(Source = "Nabil et al.") %>% 
   mutate(Coordinates = gsub("[N|E|S|W|″]", "",Coordinates)) %>%   # Convert character coordinates to decimal
   separate(Coordinates, c("Lat", "Long"), sep=" ") %>%
   mutate(Lat = gsub("[°|′]", " ", Lat)) %>%

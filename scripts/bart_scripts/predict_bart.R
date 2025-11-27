@@ -24,7 +24,7 @@ grid_res <- 0.1
 pred_dates <- c("01-01", "04-01", "07-01", "10-01")
 
 ## Create standard prediction grid
-egy_map <- ne_countries(country = "Egypt", returnclass = "sf")
+egy_map <- ne_countries(country = "Egypt", returnclass = "sf", )
 sf::st_write(egy_map, "egy_map.shp", delete_layer = TRUE)
 
 egy_lims <- st_bbox(egy_map)
@@ -34,6 +34,8 @@ egy_ext <- terra::ext(24,37,21,32) # based on bounding box of Egypt above
 egy_rast <- terra::rast(extent=egy_ext, 
                         res = grid_res,
                         crs = "EPSG:4326")
+
+egy_map_hires <- ne_countries(country = "Egypt", returnclass = "sf", scale = "large")
 
 # Generate predictions for each seasonal date
 for(i in 1:length(pred_dates)){
@@ -63,14 +65,14 @@ for(i in 1:length(pred_dates)){
   # load(file = "models/predictions.rds")
 }
 
-pred_all <- list.files(path="models/", pattern = "\\.csv", full.names=TRUE) %>% 
+pred_all <- list.files(path="models/", pattern = "predictions_df_[1-4].csv", full.names=TRUE) %>% 
   map_dfr(read.csv)
 
 
 # Plot mean predictions
 p1 <- ggplot() +
   geom_raster(data = pred_all, aes(x = x, y = y, fill = mean)) +
-  geom_sf(data = egy_map[1], color = "black", alpha = 0)  +
+  geom_sf(data = egy_map_hires[1], color = "black", alpha = 0)  +
   theme_bw() +
   scale_fill_viridis_c(option = "plasma", na.value = "transparent") +
   facet_wrap(date ~ ., nrow = 1) +
@@ -82,7 +84,7 @@ ggsave("figures/mean_predictions.png", plot = p1, width = 14, height = 4)
 
 p1_red <- ggplot() +
   geom_raster(data = pred_all, aes(x = x, y = y, fill = mean)) +
-  geom_sf(data = egy_map[1], color = "black", alpha = 0)  +
+  geom_sf(data = egy_map_hires[1], color = "black", alpha = 0)  +
   theme_bw() +
   scale_fill_viridis_c(option = "plasma", na.value = "transparent") +
   facet_wrap(date ~ ., nrow = 1) +
@@ -101,7 +103,7 @@ u <- ggplot() +
                 filter(date == pred_dates[i]) %>% 
                 pivot_longer(cols = mean:upper_cb, names_to = "var"), 
               aes(x = x, y = y, fill = value)) +
-  geom_sf(data = egy_map[1], color = "black", alpha = 0)  +
+  geom_sf(data = egy_map_hires[1], color = "black", alpha = 0)  +
   theme_bw() +
   scale_fill_viridis_c(option = "plasma", na.value = "transparent") +
   facet_wrap(var ~ ., nrow = 1) +

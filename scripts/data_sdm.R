@@ -14,22 +14,6 @@ point_data <- st_as_sf(egy_data,
                        coords = c("Longitude", "Latitude"),
                        crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
 
-
-
-ggplot() +
-  geom_sf(data = egy_map[1], fill = "grey", color = "black", alpha = 0.4)  +
-  geom_sf(data = point_data %>% arrange(Result, Source), aes(color = Result, shape = Source), size = 4, alpha = 0.7) +
-  theme_minimal() +
-  coord_sf(xlim = c(30,34), ylim = c(29,32)) +
-  scale_shape_manual(values=c(19, 18, 15, 17)) +
-  scale_color_manual(values=c('#56B4E9','#F8766D')) +
-  labs(x = "Longitude",
-       y = "Latitude",
-       shape = "Source",
-       color = "Result")
-
-
-
 # How many unique spatial data points?
 
 p <- egy_data %>%
@@ -116,13 +100,70 @@ nrow(n)
 # # 22 vs 15 points at res = 0.0005 deg
 # # Crashes at res = 0.00001 deg
 
-#######################
-# Assemble covariates #
-#######################
+################################
+# Set training point instances #
+################################
 
 train_points <- st_as_sf(bind_rows(p, n), 
                          coords = c("Longitude", "Latitude"),
                          crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+
+train_summ <- st_as_sf(bind_rows(p, n) %>% group_by(Latitude, Longitude, Date, Result) %>% tally,
+                         coords = c("Longitude", "Latitude"),
+                         crs = "+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0")
+
+#  Data Figure
+library(patchwork)
+
+egy_map_hires <- ne_countries(country = "Egypt", returnclass = "sf", scale = "large")
+
+# Include very slight jitter to clearly show n points
+plot_data <- st_jitter(train_points, amount = 0.015)
+
+map_main <- ggplot() +
+  geom_sf(data = egy_map_hires[1], fill = "grey80", color = "black", alpha = 0.4)  +
+  geom_sf(data = plot_data %>% arrange(Result), 
+          aes(color = Result, fill = Result), 
+          size = 2, 
+          shape = 21,
+          alpha = 0.4) +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "white"),
+        axis.title.x = element_blank(), axis.title.y = element_blank()) +
+  scale_fill_manual(values=c('#56B4E9','#F8766D')) +
+  scale_color_manual(values=c('#1982bd','#e4190b')) +
+  labs(x = "Longitude",
+       y = "Latitude",
+       shape = "Source",
+       color = "Result")
+
+
+map_delta <- ggplot() +
+  geom_sf(data = egy_map_hires[1], fill = "grey80", color = "black", alpha = 0.4)  +
+  geom_sf(data = plot_data %>% arrange(Result), 
+          aes(color = Result, fill = Result), 
+          size = 2, 
+          shape = 21,
+          alpha = 0.4) +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "white")) +
+  coord_sf(xlim = c(30,34), ylim = c(29,31.5)) +
+  scale_fill_manual(values=c('#56B4E9','#F8766D')) +
+  scale_color_manual(values=c('#1982bd','#e4190b')) +
+  labs(x = "Longitude",
+       y = "Latitude",
+       shape = "Source",
+       color = "Result")
+
+map_fig <- map_delta +
+  inset_element(map_main, 0.45, 0, 1.05, 0.60) +
+  plot_layout(guides = 'collect')
+
+ggsave("figures/map.png", plot = map_fig, width = 8.25, height = 5)
+
+#######################
+# Assemble covariates #
+#######################
 
 env_elev <- geodata::elevation_global(res = 0.5, path = "data/env_vars/elevation/geodata_global_res0.5")
 env_land <- terra::rast("data/env_vars/landcover/landcover_type1_full_raster.tif")
