@@ -348,3 +348,4 @@ v <- varimp_summ %>%
        y = "mean variable importance")
 
 ggsave("figures/varimp.png", plot = v, width = 6, height = 2)
+ggsave("figures/varimp.pdf", plot = v, width = 6, height = 2)

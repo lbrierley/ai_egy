@@ -112,5 +112,6 @@ u <- ggplot() +
        fill = "prob.")
 
 ggsave(paste0("figures/uncertainty_seas_",i,".png"), plot = u, width = 10, height = 4)
+ggsave(paste0("figures/uncertainty_seas_",i,".pdf"), plot = u, width = 10, height = 4)
 
 }

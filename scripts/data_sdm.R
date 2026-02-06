@@ -160,6 +160,7 @@ map_fig <- map_delta +
   plot_layout(guides = 'collect')
 
 ggsave("figures/map.png", plot = map_fig, width = 8.25, height = 5)
+ggsave("figures/map.pdf", plot = map_fig, width = 8.25, height = 5)
 
 #######################
 # Assemble covariates #

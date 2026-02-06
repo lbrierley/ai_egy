@@ -11,7 +11,7 @@ library(rnaturalearth)
 source("scripts/functions.R")
 
 # Set grid resolution for prediction
-grid_res <- 0.1
+grid_res <- 0.01
 
 # Set seasonal dates to run predictions at (must be given as month-day)
 pred_dates <- c("01-01", "04-01", "07-01", "10-01")
@@ -164,11 +164,11 @@ for (i in 1:length(pred_dates)){
                           "prec_m"
   )
   
-  temp_raster %>% terra::writeRaster(paste0("data/pred/pred_grid_",i,".tif"), overwrite = TRUE)
+  temp_raster %>% terra::writeRaster(paste0("data/pred/pred_grid_", grid_res, "_", i,".tif"), overwrite = TRUE)
   
   temp_df <- temp_raster %>% as.data.frame(xy = TRUE)
 
-  temp_df %>% write.csv(paste0("data/pred/pred_grid_",i,".csv"))
+  temp_df %>% write.csv(paste0("data/pred/pred_grid_", grid_res, "_", i,".csv"))
   
 }
 
