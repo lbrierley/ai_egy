@@ -5,7 +5,9 @@ Supporting data and code associated with Nabil et al. (2026). Molecular surveill
 ## Scripts
 
 `data_egy.R` loads and formats all geolocated avian influenza records for Egypt from the above citation, FAO's EMPRES-i, WOAH's WAHIS, and BV-BRC.
+
 `data_sdm.R` loads and formats all necessary spatial covariate layers. This requires functions from `functions.R`.
+
 
 `fit_bart.R` and `fit_bart_LOSO.R` will fit, choose, and extract variable importance from a BART machine learning to predict avian influenza presence from the spatial covariates, validating models by either a 75:25 train:test split in spatial site clusters, or leaving each site cluster out in turn (LOSO). These require functions from `bart_scripts/bart_functions.R`.
 
